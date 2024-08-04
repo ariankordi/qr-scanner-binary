@@ -233,7 +233,7 @@ class QrScanner {
         this._flashOn = true;
         if (!this._active || this._paused) return; // flash will be turned on later on .start()
         try {
-            if (!await this.hasFlash()) throw 'No flash available';
+            if (!await this.hasFlash()) throw new Error('No flash available');
             // Note that the video track is guaranteed to exist and to be a MediaStream due to the check in hasFlash
             await (this.$video.srcObject as MediaStream).getVideoTracks()[0].applyConstraints({
                 // @ts-ignore: constraint 'torch' is unknown to ts
@@ -751,7 +751,7 @@ class QrScanner {
     }
 
     private async _getCameraStream(): Promise<{ stream: MediaStream, facingMode: QrScanner.FacingMode }> {
-        if (!navigator.mediaDevices) throw 'Camera not found.';
+        if (!navigator.mediaDevices) throw new Error('Camera not found.');
 
         const preferenceType = /^(environment|user)$/.test(this._preferredCamera)
             ? 'facingMode'
@@ -783,7 +783,7 @@ class QrScanner {
             } catch (e) {}
         }
 
-        throw 'Camera not found.';
+        throw new Error('Camera not found.');
     }
 
     private async _restartVideoStream(): Promise<void> {
@@ -895,7 +895,7 @@ class QrScanner {
                 }
             }
         } else {
-            throw 'Unsupported image type.';
+            throw new Error('Unsupported image type.');
         }
     }
 
