@@ -164,7 +164,7 @@
         if (!file) {
             return;
         }
-        QrScanner.scanImage(file, { returnDetailedScanResult: true })
+        QrScanner.scanImage(file)
             .then(result => setResult(fileQrResult, result))
             .catch(e => setResult(fileQrResult, { data: e || 'No QR code found.' }));
     });
