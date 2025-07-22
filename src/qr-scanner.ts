@@ -4,12 +4,6 @@ class QrScanner {
     private static _disableBarcodeDetector = false;
     private static _workerMessageId = 0;
 
-    /** @deprecated */
-    static set WORKER_PATH(workerPath: string) {
-        console.warn('Setting QrScanner.WORKER_PATH is not required and not supported anymore. '
-            + 'Have a look at the README for new setup instructions.');
-    }
-
     static async hasCamera(): Promise<boolean> {
         try {
             return !!(await QrScanner.listCameras(false)).length;
@@ -71,6 +65,7 @@ class QrScanner {
     private _flashOn: boolean = false;
     private _destroyed: boolean = false;
 
+    /*
     constructor(
         video: HTMLVideoElement,
         onDecode: (result: QrScanner.ScanResult) => void,
@@ -82,32 +77,16 @@ class QrScanner {
             highlightScanRegion?: boolean,
             highlightCodeOutline?: boolean,
             overlay?: HTMLDivElement,
-            /** just a temporary flag until we switch entirely to the new api */
+            // just a temporary flag until we switch entirely to the new api
             returnDetailedScanResult?: true,
         },
     );
-    /** @deprecated */
-    constructor(
-        video: HTMLVideoElement,
-        onDecode: (result: string) => void,
-        onDecodeError?: (error: Error | string) => void,
-        calculateScanRegion?: (video: HTMLVideoElement) => QrScanner.ScanRegion,
-        preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId,
-    );
-    /** @deprecated */
-    constructor(
-        video: HTMLVideoElement,
-        onDecode: (result: string) => void,
-        onDecodeError?: (error: Error | string) => void,
-        canvasSize?: number,
-        preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId,
-    );
-    /** @deprecated */
-    constructor(video: HTMLVideoElement, onDecode: (result: string) => void, canvasSize?: number);
+    */
+    
     constructor(
         video: HTMLVideoElement,
         onDecode: ((result: QrScanner.ScanResult) => void) | ((result: string) => void),
-        canvasSizeOrOnDecodeErrorOrOptions?: number | ((error: Error | string) => void) | {
+        options?: number | ((error: Error | string) => void) | {
             onDecodeError?: (error: Error | string) => void,
             calculateScanRegion?: (video: HTMLVideoElement) => QrScanner.ScanRegion,
             preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId,
@@ -117,12 +96,11 @@ class QrScanner {
             overlay?: HTMLDivElement,
             /** just a temporary flag until we switch entirely to the new api */
             returnDetailedScanResult?: true,
-        },
-        canvasSizeOrCalculateScanRegion?: number | ((video: HTMLVideoElement) => QrScanner.ScanRegion),
-        preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId,
+        },        
     ) {
         this.$video = video;
         this.$canvas = document.createElement('canvas');
+        this.$fullCanvas = document.createElement('canvas');
 
         if (canvasSizeOrOnDecodeErrorOrOptions && typeof canvasSizeOrOnDecodeErrorOrOptions === 'object') {
             // we got an options object using the new api
@@ -143,21 +121,12 @@ class QrScanner {
             this._legacyOnDecode = onDecode as QrScanner['_legacyOnDecode'];
         }
 
-        const options = typeof canvasSizeOrOnDecodeErrorOrOptions === 'object'
-            ? canvasSizeOrOnDecodeErrorOrOptions
-            : {};
-        this._onDecodeError = options.onDecodeError || (typeof canvasSizeOrOnDecodeErrorOrOptions === 'function'
-            ? canvasSizeOrOnDecodeErrorOrOptions
-            : this._onDecodeError);
-        this._calculateScanRegion = options.calculateScanRegion || (typeof canvasSizeOrCalculateScanRegion==='function'
-            ? canvasSizeOrCalculateScanRegion
-            : this._calculateScanRegion);
-        this._preferredCamera = options.preferredCamera || preferredCamera || this._preferredCamera;
-        this._legacyCanvasSize = typeof canvasSizeOrOnDecodeErrorOrOptions === 'number'
-            ? canvasSizeOrOnDecodeErrorOrOptions
-            : typeof canvasSizeOrCalculateScanRegion === 'number'
-                ? canvasSizeOrCalculateScanRegion
-                : this._legacyCanvasSize;
+        options = typeof options === 'object' ? options : {};
+
+        this._onDecodeError = options.onDecodeError || this._onDecodeError;
+        this._calculateScanRegion = options.calculateScanRegion || this._calculateScanRegion;
+        this._preferredCamera = options.preferredCamera || this._preferredCamera;
+        // this._legacyCanvasSize = this._legacyCanvasSize;
         this._maxScansPerSecond = options.maxScansPerSecond || this._maxScansPerSecond;
 
         this._onPlay = this._onPlay.bind(this);
@@ -420,8 +389,7 @@ class QrScanner {
     }
 
     static async scanImage(
-        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
-            | SVGImageElement | File | Blob | URL | String,
+        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | String,
         options: {
             scanRegion?: QrScanner.ScanRegion | null,
             qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null,
@@ -442,6 +410,7 @@ class QrScanner {
         disallowCanvasResizing?: boolean,
         alsoTryWithoutScanRegion?: boolean,
     ): Promise<string>;
+
     static async scanImage(
         imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
             | SVGImageElement | File | Blob | URL | String,
@@ -491,8 +460,7 @@ class QrScanner {
         const gotExternalEngine = !!qrEngine;
 
         try {
-            let image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
-                | SVGImageElement;
+            let image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement;
             let canvasContext: CanvasRenderingContext2D;
             [qrEngine, image] = await Promise.all([
                 qrEngine || QrScanner.createQrEngine(),
@@ -616,14 +584,7 @@ class QrScanner {
         QrScanner._postWorkerMessage(this._qrEnginePromise, 'inversionMode', inversionMode);
     }
 
-    static async createQrEngine(): Promise<Worker | BarcodeDetector>;
-    /** @deprecated */
-    static async createQrEngine(workerPath: string): Promise<Worker | BarcodeDetector>;
-    static async createQrEngine(workerPath?: string): Promise<Worker | BarcodeDetector> {
-        if (workerPath) {
-            console.warn('Specifying a worker path is not required and not supported anymore.');
-        }
-
+    static async createQrEngine(): Promise<Worker | BarcodeDetector> {
         // @ts-ignore no types defined for import
         const createWorker = () => (import('./qr-scanner-worker.min.js') as Promise<{ createWorker: () => Worker }>)
             .then((module) => module.createWorker());
@@ -988,10 +949,8 @@ class QrScanner {
     }
 
     private static async _loadImage(
-        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
-            | SVGImageElement | File | Blob | URL | String,
-    ): Promise<HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
-        | SVGImageElement > {
+        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | String,
+    ): Promise<HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement > {
         if (imageOrFileOrBlobOrUrl instanceof Image) {
             await QrScanner._awaitImageLoad(imageOrFileOrBlobOrUrl);
             return imageOrFileOrBlobOrUrl;
@@ -1061,7 +1020,7 @@ class QrScanner {
             id,
             type,
             data,
-        }, transfer);
+        }, { transfer });
         return id;
     }
 }
