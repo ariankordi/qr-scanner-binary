@@ -80,8 +80,6 @@ class QrScanner {
     ) {
         this.$video = video;
         this.$canvas = document.createElement('canvas');
-        this.$fullCanvas = document.createElement('canvas');
-        
         this._onDecode = onDecode as QrScanner['_onDecode'];    
         
         options = typeof options === 'object' ? options : {};
@@ -362,7 +360,6 @@ class QrScanner {
         let scanRegion: QrScanner.ScanRegion | null | undefined;
         let qrEngine: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null | undefined;
         let canvas: HTMLCanvasElement | null | undefined;
-        let fullCanvas: HTMLCanvasElement | null | undefined;
         let disallowCanvasResizing: boolean = false;
         let alsoTryWithoutScanRegion: boolean = false;
 
@@ -371,7 +368,6 @@ class QrScanner {
         scanRegion = options.scanRegion || scanRegion;
         qrEngine = options.qrEngine || qrEngine;
         canvas = options.canvas || canvas;
-        fullCanvas = options.fullCanvas || fullCanvas;
         disallowCanvasResizing = options.disallowCanvasResizing || false;
         alsoTryWithoutScanRegion = options.alsoTryWithoutScanRegion || false;
         
