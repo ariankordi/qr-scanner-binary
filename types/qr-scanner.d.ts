@@ -92,6 +92,7 @@ declare namespace QrScanner {
     }
     interface ScanResult {
         data: string;
+        binaryData?: Uint8Array;
         cornerPoints: QrScanner.Point[];
     }
 }

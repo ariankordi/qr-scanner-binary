@@ -52,7 +52,7 @@ class QrScanner {
     readonly $overlay?: HTMLDivElement;
     private readonly $codeOutlineHighlight?: SVGSVGElement;
     private readonly _onDecode?: (result: QrScanner.ScanResult) => void;
-    
+
     private readonly _legacyCanvasSize: number = QrScanner.DEFAULT_CANVAS_SIZE;
     private _preferredCamera: QrScanner.FacingMode | QrScanner.DeviceId = 'environment';
     private readonly _maxScansPerSecond: number = 25;
@@ -76,12 +76,12 @@ class QrScanner {
             highlightScanRegion?: boolean,
             highlightCodeOutline?: boolean,
             overlay?: HTMLDivElement,
-        },        
+        },
     ) {
         this.$video = video;
         this.$canvas = document.createElement('canvas');
-        this._onDecode = onDecode as QrScanner['_onDecode'];    
-        
+        this._onDecode = onDecode as QrScanner['_onDecode'];
+
         options = typeof options === 'object' ? options : {};
 
         this._onDecodeError = options.onDecodeError || this._onDecodeError;
@@ -363,14 +363,14 @@ class QrScanner {
         let disallowCanvasResizing: boolean = false;
         let alsoTryWithoutScanRegion: boolean = false;
 
-        options = typeof options === 'object' ? options : {}; 
-        
+        options = typeof options === 'object' ? options : {};
+
         scanRegion = options.scanRegion || scanRegion;
         qrEngine = options.qrEngine || qrEngine;
         canvas = options.canvas || canvas;
         disallowCanvasResizing = options.disallowCanvasResizing || false;
         alsoTryWithoutScanRegion = options.alsoTryWithoutScanRegion || false;
-        
+
 
         const gotExternalEngine = !!qrEngine;
 
@@ -405,6 +405,7 @@ class QrScanner {
                         if (event.data.data !== null) {
                             resolve({
                                 data: event.data.data,
+                                binaryData: event.data.binaryData,
                                 cornerPoints: QrScanner._convertPoints(event.data.cornerPoints, scanRegion),
                             });
                         } else {
@@ -515,7 +516,7 @@ class QrScanner {
         // Chromium based browsers, regardless of the version. For that constellation, the BarcodeDetector does not
         // error but does not detect QR codes. Macs without an M1/M2 or before Ventura are fine.
         // See issue #209 and https://bugs.chromium.org/p/chromium/issues/detail?id=1382442
-        // UPDATE: ISSUE RESOLVED in Chrome > 113 / CREDIT: 
+        // UPDATE: ISSUE RESOLVED in Chrome > 113 / CREDIT:
         // Enable BarcodeDetector in M* chips in Chromium versions after 113 by alsherko (https://github.com/alsherko)
         // https://github.com/alsherko/qr-scanner/pull/243/commits/8c01cd4d9d9ef1640246d1f96969e69111046e52
         const userAgentData = navigator.userAgentData;
@@ -716,8 +717,8 @@ class QrScanner {
             if (result) {
                 if (this._onDecode) {
                     this._onDecode(result);
-                } 
-                
+                }
+
                 if (this.$codeOutlineHighlight) {
                     clearTimeout(this._codeOutlineHighlightRemovalTimeout);
                     this._codeOutlineHighlightRemovalTimeout = undefined;
@@ -970,6 +971,7 @@ declare namespace QrScanner {
 
     export interface ScanResult {
         data: string;
+        binaryData?: Uint8Array;
         // In clockwise order, starting at top left, but this might not be guaranteed in the future.
         cornerPoints: QrScanner.Point[];
     }
