@@ -37,11 +37,10 @@ export default () => [
             typescript(),
             sourcemaps(),
             closureCompiler({
-                //compilation_level: 'ADVANCED',
-                //warning_level: 'QUIET',
+                compilation_level: 'ADVANCED',
+                warning_level: 'QUIET',
                 language_in: 'ECMASCRIPT6',
-                language_out: 'ECMASCRIPT6',
-                rewrite_polyfills: false,
+                language_out: 'ECMASCRIPT6'
             }),
             workerScriptToDynamicImport(),
         ]
@@ -61,7 +60,8 @@ export default () => [
                 format: 'umd',
                 name: 'QrScanner',
             }],
-            language_out: 'ECMASCRIPT_2017',
+            language_out: 'ECMASCRIPT6',
+            compilation_level: 'SIMPLE_OPTIMIZATIONS',
         },
         // legacy build specific settings
         {
@@ -77,6 +77,10 @@ export default () => [
                 // inline the worker as older browsers that already supported es6 did not support dynamic imports yet
                 inlineDynamicImports: true,
             }],
+            // preserve quotes when referring to worker properties
+            // this allows closure compiler to properly refer to
+            // the property returned by the worker
+            compilation_level: 'WHITESPACE_ONLY',
             language_out: 'ECMASCRIPT6',
         },
     ].map((specificSettings) => ({
@@ -92,12 +96,12 @@ export default () => [
                 entries: specificSettings.aliases,
             }),
             typescript({
-                target: 'ES2017',
+                target: 'ES2015',
             }),
             closureCompiler({
-                language_in: 'ECMASCRIPT_2017',
-                language_out: specificSettings.language_out,
-                rewrite_polyfills: false,
+                compilation_level: specificSettings.compilation_level,
+                language_in: 'ECMASCRIPT6',
+                language_out: specificSettings.language_out
             })
         ],
     }))),

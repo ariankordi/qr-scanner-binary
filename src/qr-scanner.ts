@@ -396,17 +396,18 @@ class QrScanner {
                     let onError: (error: ErrorEvent | string) => void;
                     let expectedResponseId = -1;
                     onMessage = (event: MessageEvent) => {
-                        if (event.data.id !== expectedResponseId) {
+                        const data: Record<string, any> = event.data;
+                        if (data['id'] !== expectedResponseId) {
                             return;
                         }
                         qrEngineWorker.removeEventListener('message', onMessage);
                         qrEngineWorker.removeEventListener('error', onError);
                         clearTimeout(timeout);
-                        if (event.data.data !== null) {
+                        if (data['data'] !== null) {
                             resolve({
-                                data: event.data.data,
-                                binaryData: event.data.binaryData,
-                                cornerPoints: QrScanner._convertPoints(event.data.cornerPoints, scanRegion),
+                                data: data['data'],
+                                binaryData: data['binaryData'],
+                                cornerPoints: QrScanner._convertPoints(data['cornerPoints'], scanRegion),
                             });
                         } else {
                             reject(QrScanner.NO_QR_CODE_FOUND);
@@ -508,7 +509,7 @@ class QrScanner {
         const useBarcodeDetector = !QrScanner._disableBarcodeDetector
             && 'BarcodeDetector' in window
             && BarcodeDetector.getSupportedFormats
-            && (await BarcodeDetector.getSupportedFormats()).includes('qr_code');
+            && (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
 
         if (!useBarcodeDetector) return createWorker();
 

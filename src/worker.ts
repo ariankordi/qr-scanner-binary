@@ -39,7 +39,7 @@ self.onmessage = event => {
     }
 };
 
-function decode(data: { data: Uint8ClampedArray, width: number, height: number }, requestId: number): void {
+function decode(data: { data: Uint8ClampedArray, width: number, height: number }, id: number): void {
     const rgbaData = data['data'];
     const width = data['width'];
     const height = data['height'];
@@ -47,29 +47,31 @@ function decode(data: { data: Uint8ClampedArray, width: number, height: number }
         inversionAttempts: inversionAttempts,
         greyScaleWeights: grayscaleWeights,
     });
-    if (!result) {
-        (self as unknown as Worker).postMessage({
-            id: requestId,
-            type: 'qrResult',
-            data: null,
-            binaryData: null,
-        });
-        return;
-    }
 
-    (self as unknown as Worker).postMessage({
-        id: requestId,
-        type: 'qrResult',
-        data: result.data,
-        binaryData: result.binaryData,
+    const msg: {
+      id?: number, type?: string,
+      data?: string | null, binaryData?: Uint8Array,
+      cornerPoints?: any
+    } = {};
+    msg['id'] = id;
+    msg['type'] = 'qrResult';
+
+    if (result) {
+        msg['data'] = result.data;
+        msg['binaryData'] = Uint8Array.from(result.binaryData);
         // equivalent to cornerPoints of native BarcodeDetector
-        cornerPoints: [
+        msg['cornerPoints'] = [
             result.location.topLeftCorner,
             result.location.topRightCorner,
             result.location.bottomRightCorner,
             result.location.bottomLeftCorner,
-        ],
-    });
+        ];
+    } else {
+        msg['data'] = null;
+        // msg['binaryData'] = null;
+    }
+
+    (self as unknown as Worker).postMessage(msg);
 }
 
 function setGrayscaleWeights(data: GrayscaleWeights) {
