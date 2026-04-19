@@ -1,0 +1,3 @@
+[submodule "jsQR"]
+	path = jsQR
+	url = https://github.com/danimoh/jsQR

@@ -1,5 +1,4 @@
-// @ts-ignore jsqr-es6 does not provide types currently
-import jsQR from '../node_modules/jsqr-es6/dist/jsQR.js';
+import jsQR from '../jsQR/src/index.ts';
 
 type GrayscaleWeights = {
     red: number,
