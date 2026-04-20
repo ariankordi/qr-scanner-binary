@@ -1,8 +1,8 @@
 {
-  "name": "qr-scanner",
-  "description": "A javascript QR scanner library",
-  "version": "1.6.0",
-  "main": "qr-scanner.esm.min.js",
+  "name": "qr-scanner-binary",
+  "description": "Fork of qr-scanner library with support for binary data.",
+  "version": "1.6.1",
+  "main": "qr-scanner.browser.min.js",
   "module": "qr-scanner.esm.all.js",
   "types": "types/qr-scanner.d.ts",
   "files": [
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nimiq/qr-scanner.git"
+    "url": "git+https://github.com/ariankordi/qr-scanner-binary.git"
   },
   "keywords": [
     "qr",
@@ -47,13 +47,17 @@
     {
       "name": "alsherko",
       "url": "https://github.com/alsherko"
+    },
+    {
+      "name": "ariankordi",
+      "url": "https://github.com/ariankordi"
     }
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nimiq/qr-scanner/issues"
+    "url": "https://github.com/ariankordi/qr-scanner-binary/issues"
   },
-  "homepage": "https://github.com/nimiq/qr-scanner#readme",
+  "homepage": "https://github.com/ariankordi/qr-scanner-binary#readme",
   "dependencies": {
     "@types/offscreencanvas": "^2019.6.4"
   },
