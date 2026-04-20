@@ -1,22 +1,23 @@
 import jsQR from '../jsQR/src/index.ts';
 
 type GrayscaleWeights = {
-    red: number,
-    green: number,
-    blue: number,
-    useIntegerApproximation: boolean,
+    red: number;
+    green: number;
+    blue: number;
+    useIntegerApproximation: boolean;
 };
 
 let inversionAttempts: 'dontInvert' | 'onlyInvert' | 'attemptBoth' = 'dontInvert';
-let grayscaleWeights: GrayscaleWeights = {
-    // weights for quick luma integer approximation (https://en.wikipedia.org/wiki/YUV#Full_swing_for_BT.601)
+const grayscaleWeights: GrayscaleWeights = {
+    // weights for quick luminance integer approximation
+    // (https://en.wikipedia.org/wiki/YUV#Full_swing_for_BT.601)
     red: 77,
     green: 150,
     blue: 29,
     useIntegerApproximation: true,
 };
 
-self.onmessage = event => {
+(self as unknown as Worker).onmessage = (event) => {
     const id = event['data']['id'];
     const type = event['data']['type'];
     const data = event['data']['data'];
@@ -38,7 +39,8 @@ self.onmessage = event => {
     }
 };
 
-function decode(data: { data: Uint8ClampedArray, width: number, height: number }, id: number): void {
+function decode(data: { data: Uint8ClampedArray; width: number; height: number },
+    id: number): void {
     const rgbaData = data['data'];
     const width = data['width'];
     const height = data['height'];
@@ -48,9 +50,9 @@ function decode(data: { data: Uint8ClampedArray, width: number, height: number }
     });
 
     const msg: {
-      id?: number, type?: string,
-      data?: string | null, binaryData?: Uint8Array,
-      cornerPoints?: any
+        id?: number; type?: string;
+        data?: string | null; binaryData?: Uint8Array;
+        cornerPoints?: Array<{ x: number; y: number }>;
     } = {};
     msg['id'] = id;
     msg['type'] = 'qrResult';

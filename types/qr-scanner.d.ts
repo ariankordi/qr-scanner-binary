@@ -1,14 +1,14 @@
-declare class QrScanner {
+export default class QrScanner {
     static readonly DEFAULT_CANVAS_SIZE = 400;
-    static readonly NO_QR_CODE_FOUND = "No QR code found";
+    static readonly NO_QR_CODE_FOUND = 'No QR code found';
     private static _disableBarcodeDetector;
     private static _workerMessageId;
     static hasCamera(): Promise<boolean>;
     static listCameras(requestLabels?: boolean): Promise<Array<QrScanner.Camera>>;
     readonly $video: HTMLVideoElement;
     readonly $canvas: HTMLCanvasElement;
-    readonly $overlay?: HTMLDivElement;
-    private readonly $codeOutlineHighlight?;
+    $overlay?: HTMLDivElement;
+    private $codeOutlineHighlight?;
     private readonly _onDecode?;
     private readonly _legacyCanvasSize;
     private _preferredCamera;
@@ -40,7 +40,7 @@ declare class QrScanner {
     stop(): void;
     pause(stopStreamImmediately?: boolean): Promise<boolean>;
     setCamera(facingModeOrDeviceId: QrScanner.FacingMode | QrScanner.DeviceId): Promise<void>;
-    static scanImage(imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | String, options: {
+    static scanImage(imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string, options: {
         scanRegion?: QrScanner.ScanRegion | null;
         qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null;
         canvas?: HTMLCanvasElement | null;
@@ -62,7 +62,7 @@ declare class QrScanner {
     private _restartVideoStream;
     private static _stopVideoStream;
     private _setVideoMirror;
-    private _getFacingMode;
+    private static _getFacingMode;
     private static _drawToCanvas;
     private static _loadImage;
     private static _awaitImageLoad;
@@ -120,4 +120,3 @@ declare global {
         };
     }
 }
-export default QrScanner;

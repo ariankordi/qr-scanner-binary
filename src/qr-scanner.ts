@@ -7,7 +7,7 @@ class QrScanner {
     static async hasCamera(): Promise<boolean> {
         try {
             return !!(await QrScanner.listCameras(false)).length;
-        } catch (e) {
+        } catch (_) {
             return false;
         }
     }
@@ -16,7 +16,7 @@ class QrScanner {
         if (!navigator.mediaDevices) return [];
 
         const enumerateCameras = async (): Promise<Array<MediaDeviceInfo>> =>
-            (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === 'videoinput');
+            (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'videoinput');
 
         // Note that enumerateDevices can always be called and does not prompt the user for permission.
         // However, enumerateDevices only includes device labels if served via https and an active media stream exists
@@ -24,10 +24,11 @@ class QrScanner {
         // ask for camera permission by opening a stream.
         let openedStream: MediaStream | undefined;
         try {
-            if (requestLabels && (await enumerateCameras()).every((camera) => !camera.label)) {
-                openedStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+            if (requestLabels && (await enumerateCameras()).every(camera => !camera.label)) {
+                openedStream = await navigator.mediaDevices.getUserMedia(
+                    { audio: false, video: true });
             }
-        } catch (e) {
+        } catch (_) {
             // Fail gracefully, especially if the device has no camera or on mobile when the camera is already in use
             // and some browsers disallow a second stream.
         }
@@ -40,8 +41,8 @@ class QrScanner {
         } finally {
             // close the stream we just opened for getting camera access for listing the device labels
             if (openedStream) {
-                console.warn('Call listCameras after successfully starting a QR scanner to avoid creating '
-                    + 'a temporary video stream');
+                console.warn('Call listCameras after successfully starting a QR scanner to avoid creating ' +
+                    'a temporary video stream');
                 QrScanner._stopVideoStream(openedStream);
             }
         }
@@ -49,8 +50,8 @@ class QrScanner {
 
     readonly $video: HTMLVideoElement;
     readonly $canvas: HTMLCanvasElement;
-    readonly $overlay?: HTMLDivElement;
-    private readonly $codeOutlineHighlight?: SVGSVGElement;
+    $overlay?: HTMLDivElement;
+    private $codeOutlineHighlight?: SVGSVGElement;
     private readonly _onDecode?: (result: QrScanner.ScanResult) => void;
 
     private readonly _legacyCanvasSize: number = QrScanner.DEFAULT_CANVAS_SIZE;
@@ -59,7 +60,7 @@ class QrScanner {
     private _lastScanTimestamp: number = -1;
     private _scanRegion: QrScanner.ScanRegion;
     private _codeOutlineHighlightRemovalTimeout?: number;
-    private _qrEnginePromise: Promise<Worker | BarcodeDetector>
+    private _qrEnginePromise: Promise<Worker | BarcodeDetector>;
     private _active: boolean = false;
     private _paused: boolean = false;
     private _flashOn: boolean = false;
@@ -69,13 +70,13 @@ class QrScanner {
         video: HTMLVideoElement,
         onDecode: ((result: QrScanner.ScanResult) => void),
         options?: {
-            onDecodeError?: (error: Error | string) => void,
-            calculateScanRegion?: (video: HTMLVideoElement) => QrScanner.ScanRegion,
-            preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId,
+            onDecodeError?: (error: Error | string) => void;
+            calculateScanRegion?: (video: HTMLVideoElement) => QrScanner.ScanRegion;
+            preferredCamera?: QrScanner.FacingMode | QrScanner.DeviceId;
             maxScansPerSecond?: number;
-            highlightScanRegion?: boolean,
-            highlightCodeOutline?: boolean,
-            overlay?: HTMLDivElement,
+            highlightScanRegion?: boolean;
+            highlightCodeOutline?: boolean;
+            overlay?: HTMLDivElement;
         },
     ) {
         this.$video = video;
@@ -94,11 +95,9 @@ class QrScanner {
         this._onVisibilityChange = this._onVisibilityChange.bind(this);
         this._updateOverlay = this._updateOverlay.bind(this);
 
-        // @ts-ignore
         video.disablePictureInPicture = true;
         // Allow inline playback on iPhone instead of requiring full screen playback,
         // see https://webkit.org/blog/6784/new-video-policies-for-ios/
-        // @ts-ignore
         video.playsInline = true;
         // Allow play() on iPhone without requiring a user gesture. Should not really be needed as camera stream
         // includes no audio, but just to be safe.
@@ -112,10 +111,10 @@ class QrScanner {
             shouldHideVideo = true;
         }
         if (!document.body.contains(video)) {
-            document.body.appendChild(video);
+            document.body.append(video);
             shouldHideVideo = true;
         }
-        const videoContainer = video.parentElement!;
+        const videoContainer = video.parentElement as HTMLElement; // parent always exists
 
         if (options.highlightScanRegion || options.highlightCodeOutline) {
             const gotExternalOverlay = !!options.overlay;
@@ -128,11 +127,11 @@ class QrScanner {
             if (!gotExternalOverlay && options.highlightScanRegion) {
                 // default style; can be overwritten via css, e.g. by changing the svg's stroke color, hiding the
                 // .scan-region-highlight-svg, setting a border, outline, background, etc.
-                this.$overlay.innerHTML = '<svg class="scan-region-highlight-svg" viewBox="0 0 238 238" '
-                    + 'preserveAspectRatio="none" style="position:absolute;width:100%;height:100%;left:0;top:0;'
-                    + 'fill:none;stroke:#e9b213;stroke-width:4;stroke-linecap:round;stroke-linejoin:round">'
-                    + '<path d="M31 2H10a8 8 0 0 0-8 8v21M207 2h21a8 8 0 0 1 8 8v21m0 176v21a8 8 0 0 1-8 8h-21m-176 '
-                    + '0H10a8 8 0 0 1-8-8v-21"/></svg>';
+                this.$overlay.innerHTML = '<svg class="scan-region-highlight-svg" viewBox="0 0 238 238" ' +
+                    'preserveAspectRatio="none" style="position:absolute;width:100%;height:100%;left:0;top:0;' +
+                    'fill:none;stroke:#e9b213;stroke-width:4;stroke-linecap:round;stroke-linejoin:round">' +
+                    '<path d="M31 2H10a8 8 0 0 0-8 8v21M207 2h21a8 8 0 0 1 8 8v21m0 176v21a8 8 0 0 1-8 8h-21m-176 ' +
+                    '0H10a8 8 0 0 1-8-8v-21"/></svg>';
                 try {
                     this.$overlay.firstElementChild!.animate({ transform: ['scale(.98)', 'scale(1.01)'] }, {
                         duration: 400,
@@ -140,16 +139,18 @@ class QrScanner {
                         direction: 'alternate',
                         easing: 'ease-in-out',
                     });
-                } catch (e) {}
+                } catch (_) {
+                    // Ignore errors.
+                }
                 videoContainer.insertBefore(this.$overlay, this.$video.nextSibling);
             }
             if (options.highlightCodeOutline) {
                 // default style; can be overwritten via css
                 this.$overlay.insertAdjacentHTML(
                     'beforeend',
-                    '<svg class="code-outline-highlight" preserveAspectRatio="none" style="display:none;width:100%;'
-                        + 'height:100%;fill:none;stroke:#e9b213;stroke-width:5;stroke-dasharray:25;'
-                        + 'stroke-linecap:round;stroke-linejoin:round"><polygon/></svg>',
+                    '<svg class="code-outline-highlight" preserveAspectRatio="none" style="display:none;width:100%;' +
+                    'height:100%;fill:none;stroke:#e9b213;stroke-width:5;stroke-dasharray:25;' +
+                    'stroke-linecap:round;stroke-linejoin:round"><polygon/></svg>',
                 );
                 this.$codeOutlineHighlight = this.$overlay.lastElementChild as SVGSVGElement;
             }
@@ -174,12 +175,10 @@ class QrScanner {
                 video.style.width = '0';
                 video.style.height = '0';
                 if (this.$overlay && this.$overlay.parentElement) {
-                    this.$overlay.parentElement.removeChild(this.$overlay);
+                    this.$overlay.remove();
                 }
-                // @ts-ignore
-                delete this.$overlay!;
-                // @ts-ignore
-                delete this.$codeOutlineHighlight!;
+                delete this.$overlay;
+                delete this.$codeOutlineHighlight;
             }
 
             if (this.$overlay) {
@@ -199,13 +198,16 @@ class QrScanner {
         let stream: MediaStream | undefined;
         try {
             if (this.$video.srcObject) {
-                if (!(this.$video.srcObject instanceof MediaStream)) return false; // srcObject is not a camera stream
+                if (!(this.$video.srcObject instanceof MediaStream)) {
+                    // srcObject is not a camera stream
+                    return false;
+                }
                 stream = this.$video.srcObject;
             } else {
                 stream = (await this._getCameraStream()).stream;
             }
             return 'torch' in stream.getVideoTracks()[0].getSettings();
-        } catch (e) {
+        } catch (_) {
             return false;
         } finally {
             // close the stream we just opened for detecting whether it supports flash
@@ -221,11 +223,7 @@ class QrScanner {
     }
 
     async toggleFlash(): Promise<void> {
-        if (this._flashOn) {
-            await this.turnFlashOff();
-        } else {
-            await this.turnFlashOn();
-        }
+        await (this._flashOn ? this.turnFlashOff() : this.turnFlashOn());
     }
 
     async turnFlashOn(): Promise<void> {
@@ -236,7 +234,7 @@ class QrScanner {
             if (!await this.hasFlash()) throw new Error('No flash available');
             // Note that the video track is guaranteed to exist and to be a MediaStream due to the check in hasFlash
             await (this.$video.srcObject as MediaStream).getVideoTracks()[0].applyConstraints({
-                // @ts-ignore: constraint 'torch' is unknown to ts
+                // @ts-expect-error -- torch is not in MediaTrackConstraintSet
                 advanced: [{ torch: true }],
             });
         } catch (e) {
@@ -334,68 +332,70 @@ class QrScanner {
             return true;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 300));
         if (!this._paused) return false;
         stopStream();
         return true;
     }
 
-    async setCamera(facingModeOrDeviceId: QrScanner.FacingMode | QrScanner.DeviceId): Promise<void> {
-        if (facingModeOrDeviceId === this._preferredCamera) return;
-        this._preferredCamera = facingModeOrDeviceId;
+    async setCamera(faceOrDevice: QrScanner.FacingMode | QrScanner.DeviceId): Promise<void> {
+        if (faceOrDevice === this._preferredCamera) return;
+        this._preferredCamera = faceOrDevice;
         // Restart the scanner with the new camera which will also update the video mirror and the scan region.
         await this._restartVideoStream();
     }
 
     static async scanImage(
-        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | String,
+        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string,
         options: {
-            scanRegion?: QrScanner.ScanRegion | null,
-            qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null,
-            canvas?: HTMLCanvasElement | null,
-            disallowCanvasResizing?: boolean,
-            alsoTryWithoutScanRegion?: boolean,
+            scanRegion?: QrScanner.ScanRegion | null;
+            qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null;
+            canvas?: HTMLCanvasElement | null;
+            disallowCanvasResizing?: boolean;
+            alsoTryWithoutScanRegion?: boolean;
         },
     ): Promise<QrScanner.ScanResult> {
-        let scanRegion: QrScanner.ScanRegion | null | undefined;
-        let qrEngine: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null | undefined;
-        let canvas: HTMLCanvasElement | null | undefined;
+        const scanRegion: QrScanner.ScanRegion | null | undefined = options.scanRegion || undefined;
+        let qrEngine: Worker | BarcodeDetector |
+            Promise<Worker | BarcodeDetector> | null | undefined;
+        const canvas = options.canvas || document.createElement('canvas');
         let disallowCanvasResizing: boolean = false;
         let alsoTryWithoutScanRegion: boolean = false;
 
         options = typeof options === 'object' ? options : {};
 
-        scanRegion = options.scanRegion || scanRegion;
         qrEngine = options.qrEngine || qrEngine;
-        canvas = options.canvas || canvas;
         disallowCanvasResizing = options.disallowCanvasResizing || false;
         alsoTryWithoutScanRegion = options.alsoTryWithoutScanRegion || false;
-
 
         const gotExternalEngine = !!qrEngine;
 
         try {
-            let image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement;
-            let canvasContext: CanvasRenderingContext2D;
+            let image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement |
+                OffscreenCanvas | ImageBitmap | SVGImageElement;
             [qrEngine, image] = await Promise.all([
                 qrEngine || QrScanner.createQrEngine(),
                 QrScanner._loadImage(imageOrFileOrBlobOrUrl),
             ]);
-            [canvas, canvasContext] = QrScanner._drawToCanvas(image, scanRegion, canvas, disallowCanvasResizing);
+            const canvasContext = QrScanner._drawToCanvas(
+                image, canvas, scanRegion, disallowCanvasResizing);
             let detailedScanResult: QrScanner.ScanResult;
 
             if (qrEngine instanceof Worker) {
-                const qrEngineWorker = qrEngine; // for ts to know that it's still a worker later in the event listeners
+                // defined for ts to know that it's still a worker later in the event listeners
+                const qrEngineWorker = qrEngine;
                 if (!gotExternalEngine) {
                     // Enable scanning of inverted color qr codes.
                     QrScanner._postWorkerMessageSync(qrEngineWorker, 'inversionMode', 'both');
                 }
                 detailedScanResult = await new Promise((resolve, reject) => {
+                    /* eslint-disable prefer-const -- incorrectly says it is not reassigned */
                     let timeout: number;
-                    let onMessage: (event: MessageEvent) => void;
                     let onError: (error: ErrorEvent | string) => void;
+                    let onMessage: (event: MessageEvent) => void;
                     let expectedResponseId = -1;
                     onMessage = (event: MessageEvent) => {
+                        /* eslint-enable prefer-const */
                         const data: Record<string, any> = event.data;
                         if (data['id'] !== expectedResponseId) {
                             return;
@@ -403,27 +403,28 @@ class QrScanner {
                         qrEngineWorker.removeEventListener('message', onMessage);
                         qrEngineWorker.removeEventListener('error', onError);
                         clearTimeout(timeout);
-                        if (data['data'] !== null) {
+                        if (data['data'] === null) {
+                            reject(QrScanner.NO_QR_CODE_FOUND);
+                        } else {
                             resolve({
                                 data: data['data'],
                                 binaryData: data['binaryData'],
                                 cornerPoints: QrScanner._convertPoints(data['cornerPoints'], scanRegion),
                             });
-                        } else {
-                            reject(QrScanner.NO_QR_CODE_FOUND);
                         }
                     };
                     onError = (error: ErrorEvent | string) => {
                         qrEngineWorker.removeEventListener('message', onMessage);
                         qrEngineWorker.removeEventListener('error', onError);
                         clearTimeout(timeout);
-                        const errorMessage = !error ? 'Unknown Error' : ((error as ErrorEvent).message || error);
+                        const errorMessage = error ? ((error as ErrorEvent).message || error) : 'Unknown Error';
                         reject('Scanner error: ' + errorMessage);
                     };
                     qrEngineWorker.addEventListener('message', onMessage);
                     qrEngineWorker.addEventListener('error', onError);
                     timeout = setTimeout(() => onError('timeout'), 10000);
-                    const imageData = canvasContext.getImageData(0, 0, canvas!.width, canvas!.height);
+                    const imageData = canvasContext.getImageData(
+                        0, 0, canvas.width, canvas.height);
                     expectedResponseId = QrScanner._postWorkerMessageSync(
                         qrEngineWorker,
                         'decode',
@@ -433,7 +434,7 @@ class QrScanner {
                 });
             } else {
                 detailedScanResult = await Promise.race([
-                    new Promise<QrScanner.ScanResult>((resolve, reject) => window.setTimeout(
+                    new Promise<QrScanner.ScanResult>((_, reject) => window.setTimeout(
                         () => reject('Scanner error: timeout'),
                         10000,
                     )),
@@ -443,7 +444,8 @@ class QrScanner {
                             if (!scanResult) throw QrScanner.NO_QR_CODE_FOUND;
                             return {
                                 data: scanResult.rawValue,
-                                cornerPoints: QrScanner._convertPoints(scanResult.cornerPoints, scanRegion),
+                                cornerPoints: QrScanner._convertPoints(
+                                    scanResult.cornerPoints, scanRegion),
                             };
                         } catch (e) {
                             const errorMessage = (e as Error).message || e as string;
@@ -485,7 +487,8 @@ class QrScanner {
         }
     }
 
-    setGrayscaleWeights(red: number, green: number, blue: number, useIntegerApproximation: boolean = true): void {
+    setGrayscaleWeights(red: number, green: number,
+        blue: number, useIntegerApproximation: boolean = true): void {
         // Note that for the native BarcodeDecoder or if the worker was destroyed, this is a no-op. However, the native
         // implementations work also well with colored qr codes.
         QrScanner._postWorkerMessage(
@@ -502,14 +505,14 @@ class QrScanner {
     }
 
     static async createQrEngine(): Promise<Worker | BarcodeDetector> {
-        // @ts-ignore no types defined for import
+        // @ts-expect-error -- no types defined for import
         const createWorker = () => (import('./qr-scanner-worker.min.js') as Promise<{ createWorker: () => Worker }>)
-            .then((module) => module.createWorker());
+            .then(module => module.createWorker());
 
-        const useBarcodeDetector = !QrScanner._disableBarcodeDetector
-            && 'BarcodeDetector' in window
-            && BarcodeDetector.getSupportedFormats
-            && (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
+        const useBarcodeDetector = !QrScanner._disableBarcodeDetector &&
+            'BarcodeDetector' in globalThis &&
+          BarcodeDetector.getSupportedFormats &&
+          (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
 
         if (!useBarcodeDetector) return createWorker();
 
@@ -521,15 +524,16 @@ class QrScanner {
         // Enable BarcodeDetector in M* chips in Chromium versions after 113 by alsherko (https://github.com/alsherko)
         // https://github.com/alsherko/qr-scanner/pull/243/commits/8c01cd4d9d9ef1640246d1f96969e69111046e52
         const userAgentData = navigator.userAgentData;
-        const isChromiumOnMacWithArmVentura = userAgentData // all Chromium browsers support userAgentData
-            && userAgentData.brands.some(({ brand, version }) => /Chromium/i.test(brand) && parseInt(version) < 113)
-            && /mac ?OS/i.test(userAgentData.platform)
+        // all Chromium browsers support userAgentData
+        const isChromiumOnMacWithArmVentura = userAgentData &&
+            userAgentData.brands.some(({ brand, version }) => /Chromium/i.test(brand) && Number.parseInt(version) < 113) &&
+            /mac ?OS/i.test(userAgentData.platform) &&
             // Does it have an ARM chip (e.g. M1/M2) and Ventura? Check this last as getHighEntropyValues can
             // theoretically trigger a browser prompt, although no browser currently does seem to show one.
             // If browser or user refused to return the requested values, assume broken ARM Ventura, to be safe.
-            && await userAgentData.getHighEntropyValues(['architecture', 'platformVersion'])
+            await userAgentData.getHighEntropyValues(['architecture', 'platformVersion'])
                 .then(({ architecture, platformVersion }) =>
-                    /arm/i.test(architecture || 'arm') && parseInt(platformVersion || '13') >= /* Ventura */ 13)
+                    /arm/i.test(architecture || 'arm') && Number.parseInt(platformVersion || '13') >= /* Ventura */ 13)
                 .catch(() => true);
         if (isChromiumOnMacWithArmVentura) return createWorker();
 
@@ -626,9 +630,11 @@ class QrScanner {
             // sure to set the default of 50% if only one or no component was provided, therefore we can be sure that
             // both components are set. Additionally, it converts units other than px (e.g. rem) to px.
             const [videoX, videoY] = videoStyle.objectPosition.split(' ').map((length, i) => {
-                const lengthValue = parseFloat(length);
+                const lengthValue = Number.parseFloat(length);
                 return length.endsWith('%')
-                    ? (!i ? elementWidth - videoScaledWidth : elementHeight - videoScaledHeight) * lengthValue / 100
+                    ? (i
+                        ? elementHeight - videoScaledHeight
+                        : elementWidth - videoScaledWidth) * lengthValue / 100
                     : lengthValue;
             });
 
@@ -642,9 +648,9 @@ class QrScanner {
             overlayStyle.height = `${regionHeight / videoHeight * videoScaledHeight}px`;
             overlayStyle.top = `${elementY + videoY + regionY / videoHeight * videoScaledHeight}px`;
             const isVideoMirrored = /scaleX\(-1\)/.test(video.style.transform!);
-            overlayStyle.left = `${elementX
-                + (isVideoMirrored ? elementWidth - videoX - videoScaledWidth : videoX)
-                + (isVideoMirrored ? videoWidth - regionX - regionWidth : regionX) / videoWidth * videoScaledWidth}px`;
+            overlayStyle.left = `${elementX +
+            (isVideoMirrored ? elementWidth - videoX - videoScaledWidth : videoX) +
+            (isVideoMirrored ? videoWidth - regionX - regionWidth : regionX) / videoWidth * videoScaledWidth}px`;
             // apply same mirror as on video
             overlayStyle.transform = video.style.transform;
         });
@@ -677,7 +683,6 @@ class QrScanner {
         // settings where the exposure time is longer. Both, requestVideoFrameCallback and requestAnimationFrame are not
         // being fired if the tab is in the background, which is what we want.
         const requestFrame = 'requestVideoFrameCallback' in this.$video
-            // @ts-ignore
             ? this.$video.requestVideoFrameCallback.bind(this.$video)
             : requestAnimationFrame;
         requestFrame(async () => {
@@ -693,7 +698,8 @@ class QrScanner {
             const timeSinceLastScan = Date.now() - this._lastScanTimestamp;
             const minimumTimeBetweenScans = 1000 / this._maxScansPerSecond;
             if (timeSinceLastScan < minimumTimeBetweenScans) {
-                await new Promise((resolve) => setTimeout(resolve, minimumTimeBetweenScans - timeSinceLastScan));
+                await new Promise(resolve => setTimeout(
+                    resolve, minimumTimeBetweenScans - timeSinceLastScan));
             }
             // console.log('Scan rate:', Math.round(1000 / (Date.now() - this._lastScanTimestamp)));
             this._lastScanTimestamp = Date.now();
@@ -710,7 +716,8 @@ class QrScanner {
                 this._onDecodeError(error as Error | string);
             }
 
-            if (QrScanner._disableBarcodeDetector && !(await this._qrEnginePromise instanceof Worker)) {
+            if (QrScanner._disableBarcodeDetector &&
+                !(await this._qrEnginePromise instanceof Worker)) {
                 // replace the disabled BarcodeDetector
                 this._qrEnginePromise = QrScanner.createQrEngine();
             }
@@ -725,19 +732,23 @@ class QrScanner {
                     this._codeOutlineHighlightRemovalTimeout = undefined;
                     this.$codeOutlineHighlight.setAttribute(
                         'viewBox',
-                        `${this._scanRegion.x || 0} `
-                            + `${this._scanRegion.y || 0} `
-                            + `${this._scanRegion.width || this.$video.videoWidth} `
-                            + `${this._scanRegion.height || this.$video.videoHeight}`,
+                        `${this._scanRegion.x || 0} ` +
+                        `${this._scanRegion.y || 0} ` +
+                        `${this._scanRegion.width || this.$video.videoWidth} ` +
+                        `${this._scanRegion.height || this.$video.videoHeight}`,
                     );
-                    const polygon = this.$codeOutlineHighlight.firstElementChild!;
-                    polygon.setAttribute('points', result.cornerPoints.map(({x, y}) => `${x},${y}`).join(' '));
+                    const polygon = this.$codeOutlineHighlight.firstElementChild;
+                    console.assert(!!polygon);
+                    (polygon as Element).setAttribute('points',
+                        result.cornerPoints.map(({ x, y }) => `${x},${y}`).join(' '));
                     this.$codeOutlineHighlight.style.display = '';
                 }
-            } else if (this.$codeOutlineHighlight && !this._codeOutlineHighlightRemovalTimeout) {
+            } else if (!this._codeOutlineHighlightRemovalTimeout) {
                 // hide after timeout to make it flash less when on some frames the QR code is detected and on some not
                 this._codeOutlineHighlightRemovalTimeout = setTimeout(
-                    () => this.$codeOutlineHighlight!.style.display = 'none',
+                    () => { // below is non-null
+                        if (this.$codeOutlineHighlight) this.$codeOutlineHighlight.style.display = 'none';
+                    },
                     100,
                 );
             }
@@ -746,43 +757,51 @@ class QrScanner {
         });
     }
 
+    // eslint-disable-next-line class-methods-use-this -- This can get redefined.
     private _onDecodeError(error: Error | string): void {
         // default error handler; can be overwritten in the constructor
         if (error === QrScanner.NO_QR_CODE_FOUND) return;
         console.log(error);
     }
 
-    private async _getCameraStream(): Promise<{ stream: MediaStream, facingMode: QrScanner.FacingMode }> {
+    private async _getCameraStream():
+    Promise<{ stream: MediaStream; facingMode: QrScanner.FacingMode }> {
         if (!navigator.mediaDevices) throw new Error('Camera not found.');
 
         const preferenceType = /^(environment|user)$/.test(this._preferredCamera)
             ? 'facingMode'
             : 'deviceId';
+        // eslint-disable-next-line no-undef
         const constraintsWithoutCamera: Array<MediaTrackConstraints> = [{
-            width: { min: 1024 }
+            width: { min: 1024 },
         }, {
-            width: { min: 768 }
+            width: { min: 768 },
         }, {}];
-        const constraintsWithCamera = constraintsWithoutCamera.map((constraint) => Object.assign({}, constraint, {
+        const constraintsWithCamera = constraintsWithoutCamera.map(constraint =>
+            Object.assign({}, constraint, {
             [preferenceType]: { exact: this._preferredCamera },
         }));
 
         for (const constraints of [...constraintsWithCamera, ...constraintsWithoutCamera]) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
+                const stream = await navigator.mediaDevices.getUserMedia(
+                    { video: constraints, audio: false });
                 // Try to determine the facing mode from the stream, otherwise use a guess or 'environment' as
                 // default. Note that the guess is not always accurate as Safari returns cameras of different facing
                 // mode, even for exact facingMode constraints.
-                const facingMode = this._getFacingMode(stream)
-                    || (constraints.facingMode
-                        ? this._preferredCamera as QrScanner.FacingMode // a facing mode we were able to fulfill
+                const facingMode = QrScanner._getFacingMode(stream) ||
+                    (constraints.facingMode
+                        // a facing mode we were able to fulfill
+                        ? this._preferredCamera as QrScanner.FacingMode
                         : (this._preferredCamera === 'environment'
                             ? 'user' // switch as _preferredCamera was environment but we are not able to fulfill it
                             : 'environment' // switch from unfulfilled user facingMode or default to environment
                         )
                     );
                 return { stream, facingMode };
-            } catch (e) {}
+            } catch (_) {
+                // ignore errors
+            }
         }
 
         throw new Error('Camera not found.');
@@ -797,7 +816,7 @@ class QrScanner {
         await this.start();
     }
 
-    private static _stopVideoStream(stream : MediaStream): void {
+    private static _stopVideoStream(stream: MediaStream): void {
         for (const track of stream.getTracks()) {
             track.stop(); //  note that this will also automatically turn the flashlight off
             stream.removeTrack(track);
@@ -806,11 +825,11 @@ class QrScanner {
 
     private _setVideoMirror(facingMode: QrScanner.FacingMode): void {
         // in user facing mode mirror the video to make it easier for the user to position the QR code
-        const scaleFactor = facingMode === 'user'? -1 : 1;
+        const scaleFactor = facingMode === 'user' ? -1 : 1;
         this.$video.style.transform = 'scaleX(' + scaleFactor + ')';
     }
 
-    private _getFacingMode(videoStream: MediaStream): QrScanner.FacingMode | null {
+    private static _getFacingMode(videoStream: MediaStream): QrScanner.FacingMode | null {
         const videoTrack = videoStream.getVideoTracks()[0];
         if (!videoTrack) return null; // unknown
         // inspired by https://github.com/JodusNodus/react-qr-reader/blob/master/src/getDeviceId.js#L13
@@ -822,13 +841,12 @@ class QrScanner {
     }
 
     private static _drawToCanvas(
-        image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap
-            | SVGImageElement,
+        image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement |
+            OffscreenCanvas | ImageBitmap | SVGImageElement,
+        canvas: HTMLCanvasElement,
         scanRegion?: QrScanner.ScanRegion | null,
-        canvas?: HTMLCanvasElement | null,
-        disallowCanvasResizing= false,
-    ): [HTMLCanvasElement, CanvasRenderingContext2D] {
-        canvas = canvas || document.createElement('canvas');
+        disallowCanvasResizing = false,
+    ): CanvasRenderingContext2D {
         const scanRegionX = scanRegion && scanRegion.x ? scanRegion.x : 0;
         const scanRegionY = scanRegion && scanRegion.y ? scanRegion.y : 0;
         const scanRegionWidth = scanRegion && scanRegion.width
@@ -857,47 +875,50 @@ class QrScanner {
 
         const context = canvas.getContext('2d', {
             alpha: false,
-            willReadFrequently: true
-        })!;
+            willReadFrequently: true,
+        });
+        if (!context) {
+            throw new Error('Could not get canvas rendering context.');
+        }
         context.imageSmoothingEnabled = false; // gives less blurry images
         context.drawImage(
             image,
             scanRegionX, scanRegionY, scanRegionWidth, scanRegionHeight,
             0, 0, canvas.width, canvas.height,
         );
-        return [canvas, context];
+        return context;
     }
 
     private static async _loadImage(
-        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | String,
-    ): Promise<HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement > {
-        if (imageOrFileOrBlobOrUrl instanceof Image) {
-            await QrScanner._awaitImageLoad(imageOrFileOrBlobOrUrl);
-            return imageOrFileOrBlobOrUrl;
-        } else if (imageOrFileOrBlobOrUrl instanceof HTMLVideoElement
-            || imageOrFileOrBlobOrUrl instanceof HTMLCanvasElement
-            || imageOrFileOrBlobOrUrl instanceof SVGImageElement
-            || 'OffscreenCanvas' in window && imageOrFileOrBlobOrUrl instanceof OffscreenCanvas
-            || 'ImageBitmap' in window && imageOrFileOrBlobOrUrl instanceof ImageBitmap) {
-            return imageOrFileOrBlobOrUrl;
-        } else if (imageOrFileOrBlobOrUrl instanceof File || imageOrFileOrBlobOrUrl instanceof Blob
-            || imageOrFileOrBlobOrUrl instanceof URL || typeof imageOrFileOrBlobOrUrl === 'string') {
+        resource: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement |
+            OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string,
+    ): Promise<HTMLImageElement | HTMLVideoElement | HTMLCanvasElement |
+    OffscreenCanvas | ImageBitmap | SVGImageElement> {
+        if (resource instanceof Image) {
+            await QrScanner._awaitImageLoad(resource);
+            return resource;
+        } else if (resource instanceof HTMLVideoElement ||
+            resource instanceof HTMLCanvasElement ||
+          resource instanceof SVGImageElement ||
+          ('OffscreenCanvas' in globalThis && resource instanceof OffscreenCanvas) ||
+          ('ImageBitmap' in globalThis && resource instanceof ImageBitmap)) {
+            return resource;
+        } else if (resource instanceof File || resource instanceof Blob ||
+            resource instanceof URL || typeof resource === 'string') {
             const image = new Image();
-            if (imageOrFileOrBlobOrUrl instanceof File || imageOrFileOrBlobOrUrl instanceof Blob) {
-                image.src = URL.createObjectURL(imageOrFileOrBlobOrUrl);
-            } else {
-                image.src = imageOrFileOrBlobOrUrl.toString();
-            }
+            image.src = resource instanceof File || resource instanceof Blob
+                ? URL.createObjectURL(resource)
+                : resource.toString();
             try {
                 await QrScanner._awaitImageLoad(image);
                 return image;
             } finally {
-                if (imageOrFileOrBlobOrUrl instanceof File || imageOrFileOrBlobOrUrl instanceof Blob) {
+                if (resource instanceof File || resource instanceof Blob) {
                     URL.revokeObjectURL(image.src);
                 }
             }
         } else {
-            throw new Error('Unsupported image type.');
+            throw new TypeError('Unsupported image type.');
         }
     }
 
@@ -982,7 +1003,7 @@ declare namespace QrScanner {
 declare class BarcodeDetector {
     constructor(options?: { formats: string[] });
     static getSupportedFormats(): Promise<string[]>;
-    detect(image: ImageBitmapSource): Promise<Array<{ rawValue: string, cornerPoints: QrScanner.Point[] }>>;
+    detect(image: ImageBitmapSource): Promise<Array<{ rawValue: string; cornerPoints: QrScanner.Point[] }>>;
 }
 
 // simplified from https://github.com/lukewarlow/user-agent-data-types/blob/master/index.d.ts

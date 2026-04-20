@@ -1,19 +1,22 @@
 import * as esbuild from 'esbuild';
 import { compiler as ClosureCompiler } from 'google-closure-compiler';
-import { writeFile, readFile, unlink } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { writeFile, readFile, unlink } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
 
 async function runCC(code, flags) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const tmpIn = join(tmpdir(), `cc-in-${id}.js`);
-    const tmpOut = join(tmpdir(), `cc-out-${id}.js`);
+    const tmpIn = path.join(tmpdir(), `cc-in-${id}.js`);
+    const tmpOut = path.join(tmpdir(), `cc-out-${id}.js`);
     await writeFile(tmpIn, code);
     await new Promise((resolve, reject) => {
         const cc = new ClosureCompiler({ ...flags, js: tmpIn, js_output_file: tmpOut });
         cc.run((exitCode, _stdout, stderr) => {
-            if (exitCode !== 0) reject(new Error(`Closure Compiler failed:\n${stderr}`));
-            else resolve();
+            if (exitCode === 0) {
+                resolve();
+            } else {
+                reject(new Error(`Closure Compiler failed:\n${stderr}`));
+            }
         });
     });
     const result = await readFile(tmpOut, 'utf8');
@@ -38,9 +41,9 @@ const workerCompiled = await runCC(workerBundled, {
     language_out: 'ECMASCRIPT6',
 });
 
-const workerWrapped = 'export const createWorker=()=>new Worker(URL.createObjectURL(new Blob([`'
-    + workerCompiled.replace(/`/g, '\\`').replace(/\${/g, '\\${')
-    + '`]),{type:"application/javascript"}))';
+const workerWrapped = 'export const createWorker=()=>new Worker(URL.createObjectURL(new Blob([`' +
+    workerCompiled.replace(/`/g, '\\`').replace(/\${/g, '\\${') +
+    '`]),{type:"application/javascript"}))';
 
 await writeFile('qr-scanner-worker.min.js', workerWrapped);
 console.log('  -> qr-scanner-worker.min.js');

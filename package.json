@@ -58,12 +58,17 @@
     "url": "https://github.com/ariankordi/qr-scanner-binary/issues"
   },
   "homepage": "https://github.com/ariankordi/qr-scanner-binary#readme",
-  "dependencies": {
-    "@types/offscreencanvas": "^2019.6.4"
-  },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
     "esbuild": "^0.28.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-import-x": "^4.16.2",
+    "eslint-plugin-unicorn": "^63.0.0",
+    "globals": "^17.4.0",
     "google-closure-compiler": "^20260415.0.0",
-    "typescript": "^4.5.5"
+    "typescript": "^4.9.5"
   }
 }
