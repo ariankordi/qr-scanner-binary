@@ -1,7 +1,7 @@
 {
   "name": "qr-scanner-binary",
   "description": "Fork of qr-scanner library with support for binary data.",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "main": "qr-scanner.browser.min.js",
   "module": "qr-scanner.esm.all.js",
   "types": "types/qr-scanner.d.ts",

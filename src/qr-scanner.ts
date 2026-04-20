@@ -12,6 +12,10 @@ class QrScanner {
         }
     }
 
+    static setBarcodeDetectorDisabled() {
+      this._disableBarcodeDetector = true;
+    }
+
     static async listCameras(requestLabels = false): Promise<Array<QrScanner.Camera>> {
         if (!navigator.mediaDevices) return [];
 
@@ -125,7 +129,7 @@ class QrScanner {
             overlayStyle.pointerEvents = 'none';
             this.$overlay.classList.add('scan-region-highlight');
             if (!gotExternalOverlay && options.highlightScanRegion) {
-                // default style; can be overwritten via css, e.g. by changing the svg's stroke color, hiding the
+                // default style; can be overwritten via css, e.g. by changing the stroke color, hiding the
                 // .scan-region-highlight-svg, setting a border, outline, background, etc.
                 this.$overlay.innerHTML = '<svg class="scan-region-highlight-svg" viewBox="0 0 238 238" ' +
                     'preserveAspectRatio="none" style="position:absolute;width:100%;height:100%;left:0;top:0;' +
@@ -346,7 +350,8 @@ class QrScanner {
     }
 
     static async scanImage(
-        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string,
+        imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement |
+            OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string,
         options: {
             scanRegion?: QrScanner.ScanRegion | null;
             qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null;
@@ -511,8 +516,8 @@ class QrScanner {
 
         const useBarcodeDetector = !QrScanner._disableBarcodeDetector &&
             'BarcodeDetector' in globalThis &&
-          BarcodeDetector.getSupportedFormats &&
-          (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
+            BarcodeDetector.getSupportedFormats &&
+            (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
 
         if (!useBarcodeDetector) return createWorker();
 
@@ -521,7 +526,7 @@ class QrScanner {
         // error but does not detect QR codes. Macs without an M1/M2 or before Ventura are fine.
         // See issue #209 and https://bugs.chromium.org/p/chromium/issues/detail?id=1382442
         // UPDATE: ISSUE RESOLVED in Chrome > 113 / CREDIT:
-        // Enable BarcodeDetector in M* chips in Chromium versions after 113 by alsherko (https://github.com/alsherko)
+        // Enable BarcodeDetector in M* chips in Chromium versions after 113 by https://github.com/alsherko
         // https://github.com/alsherko/qr-scanner/pull/243/commits/8c01cd4d9d9ef1640246d1f96969e69111046e52
         const userAgentData = navigator.userAgentData;
         // all Chromium browsers support userAgentData
@@ -771,7 +776,6 @@ class QrScanner {
         const preferenceType = /^(environment|user)$/.test(this._preferredCamera)
             ? 'facingMode'
             : 'deviceId';
-        // eslint-disable-next-line no-undef
         const constraintsWithoutCamera: Array<MediaTrackConstraints> = [{
             width: { min: 1024 },
         }, {
@@ -899,9 +903,9 @@ class QrScanner {
             return resource;
         } else if (resource instanceof HTMLVideoElement ||
             resource instanceof HTMLCanvasElement ||
-          resource instanceof SVGImageElement ||
-          ('OffscreenCanvas' in globalThis && resource instanceof OffscreenCanvas) ||
-          ('ImageBitmap' in globalThis && resource instanceof ImageBitmap)) {
+            resource instanceof SVGImageElement ||
+            ('OffscreenCanvas' in globalThis && resource instanceof OffscreenCanvas) ||
+            ('ImageBitmap' in globalThis && resource instanceof ImageBitmap)) {
             return resource;
         } else if (resource instanceof File || resource instanceof Blob ||
             resource instanceof URL || typeof resource === 'string') {
@@ -945,7 +949,8 @@ class QrScanner {
         data?: any,
         transfer?: Transferable[],
     ): Promise<number> {
-        return QrScanner._postWorkerMessageSync(await qrEngineOrQrEnginePromise, type, data, transfer);
+        return QrScanner._postWorkerMessageSync(await qrEngineOrQrEnginePromise,
+            type, data, transfer);
     }
 
     // sync version of _postWorkerMessage without performance overhead of async functions
@@ -1003,7 +1008,10 @@ declare namespace QrScanner {
 declare class BarcodeDetector {
     constructor(options?: { formats: string[] });
     static getSupportedFormats(): Promise<string[]>;
-    detect(image: ImageBitmapSource): Promise<Array<{ rawValue: string; cornerPoints: QrScanner.Point[] }>>;
+    detect(image: ImageBitmapSource): Promise<Array<{
+        rawValue: string;
+        cornerPoints: QrScanner.Point[];
+    }>>;
 }
 
 // simplified from https://github.com/lukewarlow/user-agent-data-types/blob/master/index.d.ts

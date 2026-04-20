@@ -29,7 +29,7 @@ npm run-script build
 
 * Install via NPM from git:
 ```
-npm install https://github.com/ariankordi/qr-scanner-binary#v1.6.1
+npm install https://github.com/ariankordi/qr-scanner-binary#v1.6.2
 ```
 
 * The available builds are different from the original.
@@ -42,7 +42,7 @@ npm install https://github.com/ariankordi/qr-scanner-binary#v1.6.1
 
 1. Without ES modules.
 ```html
-<script src="https://cdn.jsdelivr.net/gh/ariankordi/qr-scanner-binary@v1.6.1/qr-scanner.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ariankordi/qr-scanner-binary@v1.6.2/qr-scanner.browser.min.js"></script>
 <script>
     console.debug(QrScanner);
 </script>
@@ -53,7 +53,7 @@ npm install https://github.com/ariankordi/qr-scanner-binary#v1.6.1
 <script type="importmap">
     {
         "imports": {
-            "qr-scanner-binary": "https://esm.sh/gh/ariankordi/qr-scanner-binary@v1.6.1/qr-scanner.esm.min.js"
+            "qr-scanner-binary": "https://esm.sh/gh/ariankordi/qr-scanner-binary@v1.6.2/qr-scanner.esm.min.js"
         }
     }
 </script>
