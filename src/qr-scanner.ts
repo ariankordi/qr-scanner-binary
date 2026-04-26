@@ -494,7 +494,7 @@ class QrScanner {
 
     setGrayscaleWeights(red: number, green: number,
         blue: number, useIntegerApproximation: boolean = true): void {
-        // Note that for the native BarcodeDecoder or if the worker was destroyed, this is a no-op. However, the native
+        // Note that for the native BarcodeDetector or if the worker was destroyed, this is a no-op. However, the native
         // implementations work also well with colored qr codes.
         QrScanner._postWorkerMessage(
             this._qrEnginePromise,
@@ -504,7 +504,7 @@ class QrScanner {
     }
 
     setInversionMode(inversionMode: QrScanner.InversionMode): void {
-        // Note that for the native BarcodeDecoder or if the worker was destroyed, this is a no-op. However, the native
+        // Note that for the native BarcodeDetector or if the worker was destroyed, this is a no-op. However, the native
         // implementations scan normal and inverted qr codes by default
         QrScanner._postWorkerMessage(this._qrEnginePromise, 'inversionMode', inversionMode);
     }

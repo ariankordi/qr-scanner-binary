@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
-import { compiler as ClosureCompiler } from 'google-closure-compiler';
-import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { compiler } from 'google-closure-compiler';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -8,9 +8,9 @@ async function runCC(code, flags) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const tmpIn = path.join(tmpdir(), `cc-in-${id}.js`);
     const tmpOut = path.join(tmpdir(), `cc-out-${id}.js`);
-    await writeFile(tmpIn, code);
+    await fs.writeFile(tmpIn, code);
     await new Promise((resolve, reject) => {
-        const cc = new ClosureCompiler({ ...flags, js: tmpIn, js_output_file: tmpOut });
+        const cc = new compiler({ ...flags, js: tmpIn, js_output_file: tmpOut });
         cc.run((exitCode, _stdout, stderr) => {
             if (exitCode === 0) {
                 resolve();
@@ -19,8 +19,8 @@ async function runCC(code, flags) {
             }
         });
     });
-    const result = await readFile(tmpOut, 'utf8');
-    await Promise.all([unlink(tmpIn).catch(() => {}), unlink(tmpOut).catch(() => {})]);
+    const result = await fs.readFile(tmpOut, 'utf8');
+    await Promise.all([fs.unlink(tmpIn).catch(() => {}), fs.unlink(tmpOut).catch(() => {})]);
     return result;
 }
 
@@ -45,7 +45,7 @@ const workerWrapped = 'export const createWorker=()=>new Worker(URL.createObject
     workerCompiled.replace(/`/g, '\\`').replace(/\${/g, '\\${') +
     '`]),{type:"application/javascript"}))';
 
-await writeFile('qr-scanner-worker.min.js', workerWrapped);
+await fs.writeFile('qr-scanner-worker.min.js', workerWrapped);
 console.log('  -> qr-scanner-worker.min.js');
 
 // Plugin to inline the pre-built worker module
