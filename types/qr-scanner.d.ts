@@ -1,3 +1,4 @@
+type QrEngine = Worker;
 declare class QrScanner {
     static readonly DEFAULT_CANVAS_SIZE = 400;
     static readonly NO_QR_CODE_FOUND = "No QR code found";
@@ -43,14 +44,14 @@ declare class QrScanner {
     setCamera(faceOrDevice: QrScanner.FacingMode | QrScanner.DeviceId): Promise<void>;
     static scanImage(imageOrFileOrBlobOrUrl: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string, options: {
         scanRegion?: QrScanner.ScanRegion | null;
-        qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null;
+        qrEngine?: QrEngine | Promise<QrEngine> | null;
         canvas?: HTMLCanvasElement | null;
         disallowCanvasResizing?: boolean;
         alsoTryWithoutScanRegion?: boolean;
     }): Promise<QrScanner.ScanResult>;
     setGrayscaleWeights(red: number, green: number, blue: number, useIntegerApproximation?: boolean): void;
     setInversionMode(inversionMode: QrScanner.InversionMode): void;
-    static createQrEngine(): Promise<Worker | BarcodeDetector>;
+    static createQrEngine(): Promise<QrEngine>;
     private _onPlay;
     private _onLoadedMetaData;
     private _onVisibilityChange;
@@ -95,16 +96,6 @@ declare namespace QrScanner {
         binaryData?: Uint8Array;
         cornerPoints: QrScanner.Point[];
     }
-}
-declare class BarcodeDetector {
-    constructor(options?: {
-        formats: string[];
-    });
-    static getSupportedFormats(): Promise<string[]>;
-    detect(image: ImageBitmapSource): Promise<Array<{
-        rawValue: string;
-        cornerPoints: QrScanner.Point[];
-    }>>;
 }
 declare global {
     interface Navigator {

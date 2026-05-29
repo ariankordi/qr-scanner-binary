@@ -1,3 +1,5 @@
+// type QrEngine = Worker | BarcodeDetector;
+type QrEngine = Worker;
 class QrScanner {
     static readonly DEFAULT_CANVAS_SIZE = 400;
     static readonly NO_QR_CODE_FOUND = 'No QR code found';
@@ -64,7 +66,7 @@ class QrScanner {
     private _lastScanTimestamp: number = -1;
     private _scanRegion: QrScanner.ScanRegion;
     private _codeOutlineHighlightRemovalTimeout?: number;
-    private _qrEnginePromise: Promise<Worker | BarcodeDetector>;
+    private _qrEnginePromise: Promise<QrEngine>;
     private _active: boolean = false;
     private _paused: boolean = false;
     private _flashOn: boolean = false;
@@ -354,15 +356,15 @@ class QrScanner {
             OffscreenCanvas | ImageBitmap | SVGImageElement | File | Blob | URL | string,
         options: {
             scanRegion?: QrScanner.ScanRegion | null;
-            qrEngine?: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector> | null;
+            qrEngine?: QrEngine | Promise<QrEngine> | null;
             canvas?: HTMLCanvasElement | null;
             disallowCanvasResizing?: boolean;
             alsoTryWithoutScanRegion?: boolean;
         },
     ): Promise<QrScanner.ScanResult> {
         const scanRegion: QrScanner.ScanRegion | null | undefined = options.scanRegion || undefined;
-        let qrEngine: Worker | BarcodeDetector |
-            Promise<Worker | BarcodeDetector> | null | undefined;
+        let qrEngine: QrEngine |
+            Promise<QrEngine> | null | undefined;
         const canvas = options.canvas || document.createElement('canvas');
         let disallowCanvasResizing: boolean = false;
         let alsoTryWithoutScanRegion: boolean = false;
@@ -386,97 +388,57 @@ class QrScanner {
                 image, canvas, scanRegion, disallowCanvasResizing);
             let detailedScanResult: QrScanner.ScanResult;
 
-            if (qrEngine instanceof Worker) {
-                // defined for ts to know that it's still a worker later in the event listeners
-                const qrEngineWorker = qrEngine;
-                if (!gotExternalEngine) {
-                    // Enable scanning of inverted color qr codes.
-                    QrScanner._postWorkerMessageSync(qrEngineWorker, 'inversionMode', 'both');
-                }
-                detailedScanResult = await new Promise((resolve, reject) => {
-                    /* eslint-disable prefer-const -- incorrectly says it is not reassigned */
-                    let timeout: number;
-                    let onError: (error: ErrorEvent | string) => void;
-                    let onMessage: (event: MessageEvent) => void;
-                    let expectedResponseId = -1;
-                    onMessage = (event: MessageEvent) => {
-                        /* eslint-enable prefer-const */
-                        const data: Record<string, any> = event.data;
-                        if (data['id'] !== expectedResponseId) {
-                            return;
-                        }
-                        qrEngineWorker.removeEventListener('message', onMessage);
-                        qrEngineWorker.removeEventListener('error', onError);
-                        clearTimeout(timeout);
-                        if (data['data'] === null) {
-                            reject(QrScanner.NO_QR_CODE_FOUND);
-                        } else {
-                            resolve({
-                                data: data['data'],
-                                binaryData: data['binaryData'],
-                                cornerPoints: QrScanner._convertPoints(data['cornerPoints'], scanRegion),
-                            });
-                        }
-                    };
-                    onError = (error: ErrorEvent | string) => {
-                        qrEngineWorker.removeEventListener('message', onMessage);
-                        qrEngineWorker.removeEventListener('error', onError);
-                        clearTimeout(timeout);
-                        const errorMessage = error ? ((error as ErrorEvent).message || error) : 'Unknown Error';
-                        reject('Scanner error: ' + errorMessage);
-                    };
-                    qrEngineWorker.addEventListener('message', onMessage);
-                    qrEngineWorker.addEventListener('error', onError);
-                    timeout = setTimeout(() => onError('timeout'), 10000);
-                    const imageData = canvasContext.getImageData(
-                        0, 0, canvas.width, canvas.height);
-                    expectedResponseId = QrScanner._postWorkerMessageSync(
-                        qrEngineWorker,
-                        'decode',
-                        imageData,
-                        [imageData.data.buffer],
-                    );
-                });
-            } else {
-                detailedScanResult = await Promise.race([
-                    new Promise<QrScanner.ScanResult>((_, reject) => window.setTimeout(
-                        () => reject('Scanner error: timeout'),
-                        10000,
-                    )),
-                    (async (): Promise<QrScanner.ScanResult> => {
-                        try {
-                            const [scanResult] = await qrEngine.detect(canvas!);
-                            if (!scanResult) throw QrScanner.NO_QR_CODE_FOUND;
-                            return {
-                                data: scanResult.rawValue,
-                                cornerPoints: QrScanner._convertPoints(
-                                    scanResult.cornerPoints, scanRegion),
-                            };
-                        } catch (e) {
-                            const errorMessage = (e as Error).message || e as string;
-                            if (/not implemented|service unavailable/.test(errorMessage)) {
-                                // Not implemented can apparently for some reason happen even though getSupportedFormats
-                                // in createQrScanner reported that it's supported, see issue #98.
-                                // Service unavailable can happen after some time when the BarcodeDetector crashed and
-                                // can theoretically be recovered from by creating a new BarcodeDetector. However, in
-                                // newer browsers this issue does not seem to be present anymore and therefore we do not
-                                // apply this optimization anymore but just set _disableBarcodeDetector in both cases.
-                                // Also note that if we got an external qrEngine that crashed, we should possibly notify
-                                // the caller about it, but we also don't do this here, as it's such an unlikely case.
-                                QrScanner._disableBarcodeDetector = true;
-                                // retry without passing the broken BarcodeScanner instance
-                                return QrScanner.scanImage(imageOrFileOrBlobOrUrl, {
-                                    scanRegion,
-                                    canvas,
-                                    disallowCanvasResizing,
-                                    alsoTryWithoutScanRegion,
-                                });
-                            }
-                            throw `Scanner error: ${errorMessage}`;
-                        }
-                    })(),
-                ]);
+            // defined for ts to know that it's still a worker later in the event listeners
+            const qrEngineWorker = qrEngine;
+            if (!gotExternalEngine) {
+                // Enable scanning of inverted color qr codes.
+                QrScanner._postWorkerMessageSync(qrEngineWorker, 'inversionMode', 'both');
             }
+            detailedScanResult = await new Promise((resolve, reject) => {
+                /* eslint-disable prefer-const -- incorrectly says it is not reassigned */
+                let timeout: number;
+                let onError: (error: ErrorEvent | string) => void;
+                let onMessage: (event: MessageEvent) => void;
+                let expectedResponseId = -1;
+                onMessage = (event: MessageEvent) => {
+                    /* eslint-enable prefer-const */
+                    const data: Record<string, any> = event.data;
+                    if (data['id'] !== expectedResponseId) {
+                        return;
+                    }
+                    qrEngineWorker.removeEventListener('message', onMessage);
+                    qrEngineWorker.removeEventListener('error', onError);
+                    clearTimeout(timeout);
+                    if (data['data'] === null) {
+                        reject(QrScanner.NO_QR_CODE_FOUND);
+                    } else {
+                        resolve({
+                            data: data['data'],
+                            binaryData: data['binaryData'],
+                            cornerPoints: QrScanner._convertPoints(data['cornerPoints'], scanRegion),
+                        });
+                    }
+                };
+                onError = (error: ErrorEvent | string) => {
+                    qrEngineWorker.removeEventListener('message', onMessage);
+                    qrEngineWorker.removeEventListener('error', onError);
+                    clearTimeout(timeout);
+                    const errorMessage = error ? ((error as ErrorEvent).message || error) : 'Unknown Error';
+                    reject('Scanner error: ' + errorMessage);
+                };
+                qrEngineWorker.addEventListener('message', onMessage);
+                qrEngineWorker.addEventListener('error', onError);
+                timeout = setTimeout(() => onError('timeout'), 10000);
+                const imageData = canvasContext.getImageData(
+                    0, 0, canvas.width, canvas.height);
+                expectedResponseId = QrScanner._postWorkerMessageSync(
+                    qrEngineWorker,
+                    'decode',
+                    imageData,
+                    [imageData.data.buffer],
+                );
+            });
+
             return detailedScanResult;
         } catch (e) {
             if (!scanRegion || !alsoTryWithoutScanRegion) throw e;
@@ -509,40 +471,12 @@ class QrScanner {
         QrScanner._postWorkerMessage(this._qrEnginePromise, 'inversionMode', inversionMode);
     }
 
-    static async createQrEngine(): Promise<Worker | BarcodeDetector> {
+    static async createQrEngine(): Promise<QrEngine> {
         // @ts-expect-error -- no types defined for import
         const createWorker = () => (import('./qr-scanner-worker.min.js') as Promise<{ createWorker: () => Worker }>)
             .then(module => module.createWorker());
 
-        const useBarcodeDetector = !QrScanner._disableBarcodeDetector &&
-            'BarcodeDetector' in globalThis &&
-            BarcodeDetector.getSupportedFormats &&
-            (await BarcodeDetector.getSupportedFormats()).indexOf('qr_code') !== -1;
-
-        if (!useBarcodeDetector) return createWorker();
-
-        // On Macs with an M1/M2 processor and macOS Ventura (macOS version 13), the BarcodeDetector is broken in
-        // Chromium based browsers, regardless of the version. For that constellation, the BarcodeDetector does not
-        // error but does not detect QR codes. Macs without an M1/M2 or before Ventura are fine.
-        // See issue #209 and https://bugs.chromium.org/p/chromium/issues/detail?id=1382442
-        // UPDATE: ISSUE RESOLVED in Chrome > 113 / CREDIT:
-        // Enable BarcodeDetector in M* chips in Chromium versions after 113 by https://github.com/alsherko
-        // https://github.com/alsherko/qr-scanner/pull/243/commits/8c01cd4d9d9ef1640246d1f96969e69111046e52
-        const userAgentData = navigator.userAgentData;
-        // all Chromium browsers support userAgentData
-        const isChromiumOnMacWithArmVentura = userAgentData &&
-            userAgentData.brands.some(({ brand, version }) => /Chromium/i.test(brand) && Number.parseInt(version) < 113) &&
-            /mac ?OS/i.test(userAgentData.platform) &&
-            // Does it have an ARM chip (e.g. M1/M2) and Ventura? Check this last as getHighEntropyValues can
-            // theoretically trigger a browser prompt, although no browser currently does seem to show one.
-            // If browser or user refused to return the requested values, assume broken ARM Ventura, to be safe.
-            await userAgentData.getHighEntropyValues(['architecture', 'platformVersion'])
-                .then(({ architecture, platformVersion }) =>
-                    /arm/i.test(architecture || 'arm') && Number.parseInt(platformVersion || '13') >= /* Ventura */ 13)
-                .catch(() => true);
-        if (isChromiumOnMacWithArmVentura) return createWorker();
-
-        return new BarcodeDetector({ formats: ['qr_code'] });
+        return createWorker();
     }
 
     private _onPlay(): void {
@@ -944,18 +878,18 @@ class QrScanner {
     }
 
     private static async _postWorkerMessage(
-        qrEngineOrQrEnginePromise: Worker | BarcodeDetector | Promise<Worker | BarcodeDetector>,
+        engineOrPromise: QrEngine | Promise<QrEngine>,
         type: string,
         data?: any,
         transfer?: Transferable[],
     ): Promise<number> {
-        return QrScanner._postWorkerMessageSync(await qrEngineOrQrEnginePromise,
+        return QrScanner._postWorkerMessageSync(await engineOrPromise,
             type, data, transfer);
     }
 
     // sync version of _postWorkerMessage without performance overhead of async functions
     private static _postWorkerMessageSync(
-        qrEngine: Worker | BarcodeDetector,
+        qrEngine: QrEngine,
         type: string,
         data?: any,
         transfer?: Transferable[],
@@ -1002,16 +936,6 @@ declare namespace QrScanner {
         // In clockwise order, starting at top left, but this might not be guaranteed in the future.
         cornerPoints: QrScanner.Point[];
     }
-}
-
-// simplified from https://wicg.github.io/shape-detection-api/#barcode-detection-api
-declare class BarcodeDetector {
-    constructor(options?: { formats: string[] });
-    static getSupportedFormats(): Promise<string[]>;
-    detect(image: ImageBitmapSource): Promise<Array<{
-        rawValue: string;
-        cornerPoints: QrScanner.Point[];
-    }>>;
 }
 
 // simplified from https://github.com/lukewarlow/user-agent-data-types/blob/master/index.d.ts
